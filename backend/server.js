@@ -30,7 +30,8 @@ const runAdbCommand = async (command) => {
         if (stderr) throw new Error(stderr);
         return stdout.trim();
     } catch (error) {
-        if (error.message.includes("Command failed:")) {
+        console.log(error);
+        if (error.message.includes("Command failed:") || error.message.includes("does not exist.")) {
             throw error;
         }
     }
@@ -380,6 +381,56 @@ app.post('/export-apk', async (req, res) => {
         await fsPromises.rm(fileName, { force: true });
     } catch (err) {
         console.log(err)
+        res.status(500).json(err);
+    }
+});
+
+//start activity
+app.post("/adb/start-activity", async (req, res) => {
+    try {
+        const { id, packageName, activityName } = req.body;
+
+        if (!activityName) {
+            const output = await runAdbCommand(`-s ${id} shell monkey -p ${packageName} -c android.intent.category.LAUNCHER 1`);
+            return res.status(200).json(output);
+        }
+
+        const output = await runAdbCommand(`-s ${id} shell am start -n ${packageName}/${activityName}`);
+        res.status(200).json(output);
+    } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
+app.post("/adb/power", async (req, res) => {
+    try {
+        const { id, action } = req.body;
+
+        const actionMap = {
+            "shutdown": "shell reboot -p",
+            "reboot": "reboot",
+            "recovery": "reboot recovery",
+            "bootloader": "reboot bootloader"
+        };
+
+        const output = await runAdbCommand(`-s ${id} ${actionMap[action]}`);
+        res.status(200).json(output);
+    } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
+app.post("/adb/screenshot", async (req, res) => {
+    try {
+        const { id } = req.body;
+        await runAdbCommand(`-s ${id} exec-out screencap -p > screenshot.png`);
+        const screenshot = await fsPromises.readFile('screenshot.png');
+        const screenshotBase64 = screenshot.toString('base64');
+        //png image base
+        const screenshotBase64ForImgTag = `data:image/png;base64,${screenshotBase64}`;
+        res.status(200).json(screenshotBase64ForImgTag);
+        await fsPromises.rm('screenshot.png');
+    } catch (err) {
         res.status(500).json(err);
     }
 });
