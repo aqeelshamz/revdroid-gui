@@ -5,12 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { BiDevices } from "react-icons/bi";
 import { BsAndroid } from "react-icons/bs";
 import { CgToolbox } from "react-icons/cg";
-import { DiJava } from "react-icons/di";
-import { FaJava } from "react-icons/fa";
 import {
   FiActivity,
   FiCheck,
-  FiCheckCircle,
   FiCopy,
   FiDownload,
   FiExternalLink,
@@ -287,13 +284,13 @@ export default function Home() {
   const apktoolFileUploadRef = useRef<HTMLInputElement>(null);
   const jadxFileUploadRef = useRef<HTMLInputElement>(null);
 
-  const apktoolFileUpload = () => {
-    apktoolFileUploadRef.current?.click();
-  };
+  // const apktoolFileUpload = () => {
+  //   apktoolFileUploadRef.current?.click();
+  // };
 
-  const jadxFileUpload = () => {
-    jadxFileUploadRef.current?.click();
-  };
+  // const jadxFileUpload = () => {
+  //   jadxFileUploadRef.current?.click();
+  // };
 
   const getDeviceScreenshot = async (selectedDevice: string) => {
     const config = {
