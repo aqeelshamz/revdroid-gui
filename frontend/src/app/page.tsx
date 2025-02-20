@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BiDevices } from "react-icons/bi";
 import { BsAndroid } from "react-icons/bs";
 import { CgToolbox } from "react-icons/cg";
+import { FaGithub } from "react-icons/fa";
 import {
   FiActivity,
   FiCheck,
@@ -341,11 +342,14 @@ export default function Home() {
 
   return (
     <main className="w-screen h-screen flex flex-col bg-white overflow-hidden">
-      <div className="p-5 flex-none bg-white flex items-center">
-        <p className="text-lg font-bold">🚀 RevDroid</p>
-        <div className="tooltip tooltip-bottom" data-tip="Run the backend server on port 8080. Make sure ADB is installed and running.">
-          <div className="cursor-default ml-3 badge badge-primary badge-outline">Backend URL: {serverURL}</div>
+      <div className="p-5 flex-none bg-white flex items-center justify-between">
+        <div className="flex items-center">
+          <p className="text-lg font-bold">🚀 RevDroid</p>
+          <div className="tooltip tooltip-bottom" data-tip="Run the backend server on port 8080. Make sure ADB is installed and running.">
+            <div className="cursor-default ml-3 badge badge-primary badge-outline">Backend URL: {serverURL}</div>
+          </div>
         </div>
+        <a target="_blank" className="flex items-center link link-hover" href="https://github.com/aqeelshamz/revdroid-gui"><FaGithub className="mr-2"/> GitHub</a>
       </div>
       <div className="flex-1 flex w-full bg-slate-50 min-h-0">
         <div className="flex flex-col p-5 w-[300px] h-full bg-white">
