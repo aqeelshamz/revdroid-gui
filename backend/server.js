@@ -30,7 +30,9 @@ const runAdbCommand = async (command) => {
         if (stderr) throw new Error(stderr);
         return stdout.trim();
     } catch (error) {
-        console.log(error)
+        if (error.message.includes("Command failed:")) {
+            throw error;
+        }
     }
 };
 
@@ -281,9 +283,9 @@ function densityRank(filePath) {
 //list packages
 app.post('/adb/packages', async (req, res) => {
     try {
-        const { id } = req.body; // device ID
+        const { id, systemApps } = req.body; // device ID
         // 1) List 3rd-party packages
-        const rawOutput = await execAsync(`adb -s ${id} shell pm list packages -3`);
+        const rawOutput = await execAsync(`adb -s ${id} shell pm list packages ${systemApps ? "" : "-3"}`);
         const packages = rawOutput.stdout
             .split('\n')
             .filter(line => line.includes('package:'))
@@ -318,8 +320,10 @@ app.post('/adb/packages', async (req, res) => {
                 results.push({ packageName: pkg, iconBase64 });
             }
             else {
+                const _package = await Package.findOne({ packageName: pkg });
+                const iconBase64 = (_package) ? _package.base64Image : "x";
                 results.push({
-                    packageName: pkg, iconBase64: "x"
+                    packageName: pkg, iconBase64: iconBase64
                 })
             }
         }
@@ -328,6 +332,58 @@ app.post('/adb/packages', async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/adb/launch-app', async (req, res) => {
+    try {
+        const { id, packageName } = req.body;
+        const output = await runAdbCommand(`-s ${id} shell monkey -p ${packageName} -c android.intent.category.LAUNCHER 1`);
+        res.status(200).json(output);
+    } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
+app.post('/get-apk-paths', async (req, res) => {
+    try {
+        const { id, packageName } = req.body;
+
+        //fetch all paths of the package
+        const { stdout: pmPathStdout } = await execAsync(`adb -s ${id} shell pm path ${packageName}`);
+        // parse into array of paths
+        const paths = pmPathStdout
+            .split('\n')
+            .map(line => line.replace('package:', '').trim())
+            .filter(Boolean);
+
+        console.log(paths);
+
+        return res.status(200).json(paths);
+    } catch (err) {
+        console.log(err)
+        res.status(500).json(err);
+    }
+});
+
+app.post('/export-apk', async (req, res) => {
+    try {
+        const { id, packageName } = req.body;
+
+        //fetch all paths of the package
+        const { stdout: pmPathStdout } = await execAsync(`adb -s ${id} shell pm path ${packageName}`);
+        // parse into array of paths
+        const paths = pmPathStdout
+            .split('\n')
+            .map(line => line.replace('package:', '').trim())
+            .filter(Boolean);
+
+        console.log(paths);
+
+        return res.status(200).json(paths);
+    } catch (err) {
+        console.log(err)
+        res.status(500).json(err);
     }
 });
 
