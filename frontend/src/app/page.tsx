@@ -341,8 +341,11 @@ export default function Home() {
 
   return (
     <main className="w-screen h-screen flex flex-col bg-white overflow-hidden">
-      <div className="p-5 flex-none bg-white">
-        <p className="text-lg font-semibold">RevDroid UI</p>
+      <div className="p-5 flex-none bg-white flex items-center">
+        <p className="text-lg font-bold">🚀 RevDroid</p>
+        <div className="tooltip tooltip-bottom" data-tip="Run the backend server on port 8080. Make sure ADB is installed and running.">
+          <div className="cursor-default ml-3 badge badge-primary badge-outline">Backend URL: {serverURL}</div>
+        </div>
       </div>
       <div className="flex-1 flex w-full bg-slate-50 min-h-0">
         <div className="flex flex-col p-5 w-[300px] h-full bg-white">
@@ -373,7 +376,7 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="flex flex-col mt-2">s
+          <div className="flex flex-col mt-2">
             {devices.map((device: any, index: number) => (
               <div
                 key={index}
