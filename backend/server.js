@@ -368,19 +368,16 @@ app.post('/get-apk-paths', async (req, res) => {
 
 app.post('/export-apk', async (req, res) => {
     try {
-        const { id, packageName } = req.body;
+        const { id, path } = req.body;
 
-        //fetch all paths of the package
-        const { stdout: pmPathStdout } = await execAsync(`adb -s ${id} shell pm path ${packageName}`);
-        // parse into array of paths
-        const paths = pmPathStdout
-            .split('\n')
-            .map(line => line.replace('package:', '').trim())
-            .filter(Boolean);
+        //pull apk from device to local and send response as the file
+        await execAsync(`adb -s ${id} pull ${path}`);
 
-        console.log(paths);
+        const fileName = path.split('/').pop();
+        console.log(fileName);
 
-        return res.status(200).json(paths);
+        res.download(fileName);
+        await fsPromises.rm(fileName, { force: true });
     } catch (err) {
         console.log(err)
         res.status(500).json(err);

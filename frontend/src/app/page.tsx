@@ -8,6 +8,7 @@ import {
   FiCheck,
   FiCheckCircle,
   FiCopy,
+  FiDownload,
   FiExternalLink,
   FiMaximize,
   FiPlus,
@@ -26,6 +27,9 @@ export default function Home() {
   const [connectDevicePort, setConnectDevicePort] = useState<number>(5555);
   const [packages, setPackages] = useState<string[]>([]);
   const [search, setSearch] = useState<string>("");
+
+  const [downloadingAPK, setDownloadingAPK] = useState<boolean>(false);
+  const [downloadingAPKPkg, setDownloadingAPKPkg] = useState<string>("");
 
   const [systemApps, setSystemApps] = useState<boolean>(false);
   const [apkPaths, setAPKPaths] = useState<string[]>([]);
@@ -171,6 +175,7 @@ export default function Home() {
   };
 
   const getAPKs = async (packageName: string) => {
+    setDownloadingAPKPkg(packageName);
     const config = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -181,7 +186,10 @@ export default function Home() {
     axios(config)
       .then((response) => {
         console.log(response.data);
-        toast.success("APK exported.");
+        setAPKPaths(response.data);
+        (
+          document.getElementById("download_apk") as HTMLDialogElement
+        ).showModal()
       })
       .catch((error) => {
         toast.error("Failed to export APK");
@@ -189,20 +197,32 @@ export default function Home() {
       });
   }
 
-  const exportAPK = async (packageName: string) => {
+  const exportAPK = async (path: string) => {
+    setDownloadingAPK(true);
     const config = {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       url: `${serverURL}/export-apk`,
-      data: { id: selectedDevice, packageName: packageName }
+      data: { id: selectedDevice, path: path }
     };
 
     axios(config)
       .then((response) => {
-        console.log(response.data);
-        toast.success("APK exported.");
+        setDownloadingAPK(false);
+        toast.success("APK exported successfully");
+        
+        const blob = new Blob([response.data], { type: "application/vnd.android.package-archive" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = downloadingAPKPkg + "_" + path.substring(path.lastIndexOf('/') + 1);
+        document.body.appendChild(a);
+        a.click();
+        setDownloadingAPKPkg("");
       })
       .catch((error) => {
+        setDownloadingAPK(false);
+        setDownloadingAPKPkg("");
         toast.error("Failed to export APK");
         console.log(error);
       });
@@ -320,7 +340,13 @@ export default function Home() {
                           <button className="btn btn-outline" onClick={() => launchApp(package_.packageName)}><FiExternalLink /></button>
                         </div>
                         <div className="tooltip" data-tip="Export APK">
-                          <button className="btn btn-outline ml-2" onClick={() => exportAPK(package_.packageName)}><BsAndroid /></button>
+                          <button className="btn btn-outline ml-2" onClick={() => {
+                            if (downloadingAPK) return toast.error("Another APK is being downloaded");
+                            getAPKs(package_.packageName);
+                          }}>{
+                              downloadingAPK && downloadingAPKPkg === package_.packageName
+                                ? <span className="loading loading-spinner loading-xs"></span> : <BsAndroid />
+                            }</button>
                         </div>
                       </div>
                     </div>
@@ -357,6 +383,33 @@ export default function Home() {
               <button className="ml-2 btn btn-primary" onClick={connectDevice}>
                 Connect
               </button>
+            </form>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Download APK */}
+      <dialog id="download_apk" className="modal">
+        <div className="modal-box">
+          <h3 className="font-bold text-lg">Download APK</h3>
+          <div className="flex flex-col mt-2">
+            {
+              apkPaths.map((path, index) => (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-100 rounded-lg mt-2">
+                  <p className="font-semibold">{path.substring(path.lastIndexOf('/') + 1)}</p>
+                  <button className="btn btn-primary" onClick={() => {
+                    exportAPK(path);
+                    (
+                      document.getElementById("download_apk") as HTMLDialogElement
+                    ).close()
+                  }}><FiDownload /></button>
+                </div>
+              ))
+            }
+          </div>
+          <div className="modal-action">
+            <form method="dialog">
+              <button className="btn">Cancel</button>
             </form>
           </div>
         </div>
