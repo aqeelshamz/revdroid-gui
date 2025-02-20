@@ -1,5 +1,4 @@
 "use client";
-
 import axios from "axios";
 import { useEffect, useRef, useState } from "react";
 import { BiDevices } from "react-icons/bi";
@@ -282,7 +281,7 @@ export default function Home() {
   }
 
   const apktoolFileUploadRef = useRef<HTMLInputElement>(null);
-  const jadxFileUploadRef = useRef<HTMLInputElement>(null);
+  // const jadxFileUploadRef = useRef<HTMLInputElement>(null);
 
   // const apktoolFileUpload = () => {
   //   apktoolFileUploadRef.current?.click();
@@ -374,8 +373,8 @@ export default function Home() {
               </button>
             </div>
           </div>
-          <div className="flex flex-col mt-2">
-            {devices.map((device: any, index) => (
+          <div className="flex flex-col mt-2">s
+            {devices.map((device: any, index: number) => (
               <div
                 key={index}
                 className="hover:bg-slate-100 cursor-pointer flex p-3 items-center justify-between"
