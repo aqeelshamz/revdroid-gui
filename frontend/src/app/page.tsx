@@ -327,7 +327,7 @@ export default function Home() {
       if (selectedDevice !== "" && selectedTab === "device") {
         getDeviceScreenshot(selectedDevice);
       }
-    }, 1000);
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [selectedDevice, selectedTab]);
@@ -431,7 +431,7 @@ export default function Home() {
                       </p>
                       <div>
                         <button
-                          className="btn mr-2"
+                          className="btn m-2"
                           onClick={() => {
                             power(selectedDevice, "shutdown");
                           }}
@@ -439,7 +439,7 @@ export default function Home() {
                           <FiPower /> SHUTDOWN
                         </button>
                         <button
-                          className="btn mr-2"
+                          className="btn m-2"
                           onClick={() => {
                             power(selectedDevice, "reboot");
                           }}
@@ -447,7 +447,7 @@ export default function Home() {
                           <FiPower /> REBOOT
                         </button>
                         <button
-                          className="btn mr-2"
+                          className="btn m-2"
                           onClick={() => {
                             power(selectedDevice, "reboot recovery");
                           }}
@@ -455,7 +455,7 @@ export default function Home() {
                           <FiPower /> REBOOT RECOVERY
                         </button>
                         <button
-                          className="btn mr-2"
+                          className="btn m-2"
                           onClick={() => {
                             power(selectedDevice, "reboot bootloader");
                           }}
