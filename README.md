@@ -2,8 +2,8 @@
 
 ## 🚀 Work in progress...
 
-<img width="1710" alt="Screenshot 2025-02-20 at 4 56 15 PM" src="https://github.com/user-attachments/assets/c7e80623-b1e3-4aca-97f4-08b481fd083a" />
-
-![Screenshot Capture - 2025-02-20 - 16-55-53](https://github.com/user-attachments/assets/079271ca-8221-4601-a6ff-047ae1349a18)
-
-![Screenshot Capture - 2025-02-20 - 16-56-27](https://github.com/user-attachments/assets/ebe52482-f29b-4e17-82fe-517ab9efd7e6)
+![Screenshot Capture - 2025-02-20 - 22-44-29](https://github.com/user-attachments/assets/79e462b5-ced7-4010-99de-3a8f792d78b6)
+![Screenshot Capture - 2025-02-20 - 22-44-38](https://github.com/user-attachments/assets/6c9555c8-2aa3-4e82-84da-1d2df039270d)
+![Screenshot Capture - 2025-02-20 - 22-44-41](https://github.com/user-attachments/assets/71c73ea4-845c-4ae4-a652-5d3336329d98)
+![Screenshot Capture - 2025-02-20 - 22-44-51](https://github.com/user-attachments/assets/53165e3f-3d67-4bd3-99ce-c1baba5bde83)
+![Screenshot Capture - 2025-02-20 - 22-45-21](https://github.com/user-attachments/assets/4f045bbf-7cf9-4e6a-9f50-1d6cced87a02)
