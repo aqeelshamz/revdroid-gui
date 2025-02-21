@@ -429,7 +429,88 @@ app.post("/adb/screenshot", async (req, res) => {
         //png image base
         const screenshotBase64ForImgTag = `data:image/png;base64,${screenshotBase64}`;
         res.status(200).json(screenshotBase64ForImgTag);
-        await fsPromises.rm('screenshot.png');
+    } catch (err) {
+        res.status(500).json(err);
+    }
+});
+
+app.post("/device-info", async (req, res) => {
+    try {
+        const { id } = req.body;
+        const output = await runAdbCommand(`-s ${id} shell getprop`);
+        const lines = output.split('\n');
+        const getInfo = {};
+
+        // Parse all key-value pairs from getprop
+        for (const line of lines) {
+            const [key, value] = line.split(': ');
+            if (key && value) {
+                getInfo[key.trim()] = value.trim();
+            }
+        }
+
+        // Create an object with essential details for reverse engineering & security testing
+        const deviceInfo = {
+            // Basic Device Info
+            brand: getInfo['[ro.product.brand]']?.replace(/^\[|\]$/g, ''),
+            model: getInfo['[ro.product.model]']?.replace(/^\[|\]$/g, ''),
+            manufacturer: getInfo['[ro.product.manufacturer]']?.replace(/^\[|\]$/g, ''),
+            deviceName: getInfo['[ro.product.device]']?.replace(/^\[|\]$/g, ''),
+            androidVersion: getInfo['[ro.build.version.release]']?.replace(/^\[|\]$/g, ''),
+            sdkVersion: getInfo['[ro.build.version.sdk]']?.replace(/^\[|\]$/g, ''),
+            buildId: getInfo['[ro.build.id]']?.replace(/^\[|\]$/g, ''),
+            buildFingerprint: getInfo['[ro.build.fingerprint]']?.replace(/^\[|\]$/g, ''),
+            buildType: getInfo['[ro.build.type]']?.replace(/^\[|\]$/g, ''),
+            buildTags: getInfo['[ro.build.tags]']?.replace(/^\[|\]$/g, ''),
+
+            // Hardware Details
+            hardware: getInfo['[ro.hardware]']?.replace(/^\[|\]$/g, ''),
+            cpuArchitecture: getInfo['[ro.product.cpu.abi]']?.replace(/^\[|\]$/g, ''),
+            cpuHardware: getInfo['[ro.hardware]']?.replace(/^\[|\]$/g, ''),
+            ramSize: getInfo['[ro.ram.size]']?.replace(/^\[|\]$/g, ''),
+            storageSize: getInfo['[ro.storage.size]']?.replace(/^\[|\]$/g, ''),
+            batteryLevel: getInfo['[ro.battery.level]']?.replace(/^\[|\]$/g, ''),
+            screenResolution: getInfo['[ro.screen.resolution]']?.replace(/^\[|\]$/g, ''),
+
+            // Identifiers
+            serialNumber: getInfo['[ro.serialno]']?.replace(/^\[|\]$/g, ''),
+            imei: (getInfo['[ril.serialnumber]'] || getInfo['[ro.ril.oem.imei]'])?.replace(/^\[|\]$/g, ''),
+            androidId: getInfo['[ro.build.android_id]']?.replace(/^\[|\]$/g, ''),
+            macAddress: getInfo['[wifi.interface.mac]']?.replace(/^\[|\]$/g, ''),
+
+            // Bootloader & Security
+            bootloader: getInfo['[ro.bootloader]']?.replace(/^\[|\]$/g, ''),
+            secureBoot: getInfo['[ro.boot.secureboot]']?.replace(/^\[|\]$/g, ''),
+            dmVerityStatus: getInfo['[ro.boot.veritymode]']?.replace(/^\[|\]$/g, ''),
+            verifiedBootState: getInfo['[ro.boot.verifiedbootstate]']?.replace(/^\[|\]$/g, ''),
+            selinuxStatus: getInfo['[ro.boot.selinux]']?.replace(/^\[|\]$/g, ''),
+            encryptionState: getInfo['[ro.crypto.state]']?.replace(/^\[|\]$/g, ''),
+            isRooted: getInfo['[ro.debuggable]']?.replace(/^\[|\]$/g, '') === '1' ? 'Yes' : 'No',
+
+            // Network Info
+            carrier: getInfo['[gsm.operator.alpha]']?.replace(/^\[|\]$/g, ''),
+            networkType: getInfo['[gsm.network.type]']?.replace(/^\[|\]$/g, ''),
+            radioVersion: getInfo['[gsm.version.baseband]']?.replace(/^\[|\]$/g, ''),
+            wifiSSID: getInfo['[wifi.ssid]']?.replace(/^\[|\]$/g, ''),
+            ipAddress: getInfo['[dhcp.wlan0.ipaddress]']?.replace(/^\[|\]$/g, ''),
+
+            // System Settings
+            timeZone: getInfo['[persist.sys.timezone]']?.replace(/^\[|\]$/g, ''),
+            language: getInfo['[persist.sys.locale]']?.replace(/^\[|\]$/g, ''),
+            debugMode: getInfo['[ro.debuggable]']?.replace(/^\[|\]$/g, '') === '1' ? 'Enabled' : 'Disabled',
+
+            // Additional Info for Security Testing
+            adbEnabled: getInfo['[persist.service.adb.enable]']?.replace(/^\[|\]$/g, ''),
+            usbDebugging: getInfo['[persist.sys.usb.config]']?.includes('adb') ? 'Enabled' : 'Disabled',
+            kernelVersion: getInfo['[ro.kernel.version]']?.replace(/^\[|\]$/g, ''),
+            patchLevel: getInfo['[ro.build.version.security_patch]']?.replace(/^\[|\]$/g, ''),
+            baseOS: getInfo['[ro.build.version.base_os]']?.replace(/^\[|\]$/g, ''),
+            vendorOS: getInfo['[ro.vendor.build.version.release]']?.replace(/^\[|\]$/g, '')
+        };
+
+        console.log(deviceInfo);
+
+        res.status(200).json(deviceInfo);
     } catch (err) {
         res.status(500).json(err);
     }

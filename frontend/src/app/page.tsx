@@ -8,16 +8,22 @@ import { FaGithub } from "react-icons/fa";
 import {
   FiActivity,
   FiCheck,
+  FiCloud,
   FiCopy,
+  FiCpu,
   FiDownload,
   FiExternalLink,
+  FiHash,
+  FiLock,
   FiMaximize,
   FiPlay,
   FiPlus,
   FiPower,
   FiRefreshCcw,
   FiSettings,
-  FiSmartphone
+  FiSmartphone,
+  FiStar,
+  FiWifi
 } from "react-icons/fi";
 import { GrJava } from "react-icons/gr";
 import { toast, ToastContainer } from "react-toastify";
@@ -319,14 +325,30 @@ export default function Home() {
       });
   }
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (selectedDevice !== "" && selectedTab === "device") {
-        getDeviceScreenshot(selectedDevice);
-      }
-    }, 3000);
+  const [deviceInfo, setDeviceInfo] = useState<any>({});
+  const getDeviceInfo = async (selectedDevice: string) => {
+    const config = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      url: `${serverURL}/device-info`,
+      data: { id: selectedDevice }
+    };
 
-    return () => clearInterval(interval);
+    axios(config)
+      .then((response) => {
+        console.log(response.data);
+        setDeviceInfo(response.data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
+  useEffect(() => {
+    if (selectedDevice !== "" && selectedTab === "device") {
+      getDeviceScreenshot(selectedDevice);
+      getDeviceInfo(selectedDevice);
+    }
   }, [selectedDevice, selectedTab]);
 
   useEffect(() => {
@@ -349,7 +371,7 @@ export default function Home() {
             <div className="cursor-default ml-3 badge badge-primary badge-outline">Backend URL: {serverURL}</div>
           </div>
         </div>
-        <a target="_blank" className="flex items-center link link-hover" href="https://github.com/aqeelshamz/revdroid-gui"><FaGithub className="mr-2"/> GitHub</a>
+        <a target="_blank" className="flex items-center link link-hover" href="https://github.com/aqeelshamz/revdroid-gui"><FaGithub className="mr-2" /> GitHub</a>
       </div>
       <div className="flex-1 flex w-full bg-slate-50 min-h-0">
         <div className="flex flex-col p-5 w-[300px] h-full bg-white">
@@ -419,17 +441,154 @@ export default function Home() {
               <div className="flex items-center my-4">
                 <div role="tablist" className="tabs tabs-boxed">
                   <a role="tab" onClick={() => setSelectedTab("device")} className={"tab " + (selectedTab === "device" ? "tab-active" : "")}><FiSmartphone className="mr-2" /> Device</a>
-                  <a role="tab" onClick={() => setSelectedTab("applications")} className={"tab " + (selectedTab === "applications" ? "tab-active" : "")}><BsAndroid className="mr-2" /> Applications</a>
+                  <a role="tab" onClick={() => setSelectedTab("applications")} className={"tab " + (selectedTab === "applications" ? "tab-active" : "")}><BsAndroid className="mr-2" /> Applications ({packages.length})</a>
                   <a role="tab" onClick={() => setSelectedTab("reverse")} className={"tab " + (selectedTab === "reverse" ? "tab-active" : "")}><FiSettings className="mr-2" /> Reverse Engineering</a>
                   <a role="tab" onClick={() => setSelectedTab("activity")} className={"tab " + (selectedTab === "activity" ? "tab-active" : "")}><FiActivity className="mr-2" /> Start Activity</a>
                   <a role="tab" onClick={() => setSelectedTab("misc")} className={"tab " + (selectedTab === "misc" ? "tab-active" : "")}><CgToolbox className="mr-2" /> Misc</a>
                 </div>
               </div>
               {selectedTab === "device" ?
-                <div className="flex flex-col w-full">
-                  <div className="flex w-full">
-                    <div className="flex flex-col mr-4 w-full">
-                      <p className="flex items-center font-semibold text-lg mb-2">
+                <div className="flex flex-col w-full h-full">
+                  <div className="flex w-full h-full">
+                    <div className="flex flex-col mr-4 w-full h-full overflow-y-auto max-h-[calc(100vh-200px)]">
+                      <p className="flex items-center font-semibold text-lg">
+                        <FiSmartphone className="mr-2" /> Basic Info <button className="btn btn-xs ml-2"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `Device ID: ${deviceInfo.deviceId}\nBrand: ${deviceInfo.brand}\nModel: ${deviceInfo.model}\nManufacturer: ${deviceInfo.manufacturer}\nDevice Name: ${deviceInfo.deviceName}\nAndroid Version: ${deviceInfo.androidVersion}\nSDK Version: ${deviceInfo.sdkVersion}\nBuild ID: ${deviceInfo.buildId}\nBuild Type: ${deviceInfo.buildType}\nBuild Tags: ${deviceInfo.buildTags}`
+                            );
+                            toast.success("Basic Info copied to clipboard");
+                          }
+                          }
+                        ><FiCopy /></button>
+                      </p>
+                      <div className="divider"></div>
+                      <p>
+                        <span className="font-semibold">Brand:</span> {deviceInfo.brand}<br />
+                        <span className="font-semibold">Model:</span> {deviceInfo.model}<br />
+                        <span className="font-semibold">Manufacturer:</span> {deviceInfo.manufacturer}<br />
+                        <span className="font-semibold">Device Name:</span> {deviceInfo.deviceName}<br />
+                        <span className="font-semibold">Android Version:</span> {deviceInfo.androidVersion}<br />
+                        <span className="font-semibold">SDK Version:</span> {deviceInfo.sdkVersion}<br />
+                        <span className="font-semibold">Build ID:</span> {deviceInfo.buildId}<br />
+                        <span className="font-semibold">Build Type:</span> {deviceInfo.buildType}<br />
+                        <span className="font-semibold">Build Tags:</span> {deviceInfo.buildTags}<br />
+                      </p>
+                      <div className="divider"></div>
+                      <p className="flex items-center font-semibold text-lg">
+                        <FiCpu className="mr-2" /> Hardware<button className="btn btn-xs ml-2"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `Hardware: ${deviceInfo.hardware}\nCPU Architecture: ${deviceInfo.cpuArchitecture}\nSerial Number: ${deviceInfo.serialNumber}`
+                            );
+                            toast.success("Hardware copied to clipboard");
+                          }
+                          }
+                        ><FiCopy /></button>
+                      </p>
+                      <div className="divider"></div>
+                      <p>
+                        <span className="font-semibold">Hardware:</span> {deviceInfo.hardware}<br />
+                        <span className="font-semibold">CPU Architecture:</span> {deviceInfo.cpuArchitecture}<br />
+                        <span className="font-semibold">Serial Number:</span> {deviceInfo.serialNumber}<br />
+                      </p>
+                      <div className="divider"></div>
+                      <p className="flex items-center font-semibold text-lg">
+                        <FiLock className="mr-2" /> Bootloader & Security<button className="btn btn-xs ml-2"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `Bootloader: ${deviceInfo.bootloader}\nEncryption State: ${deviceInfo.encryptionState}\nIs Rooted: ${deviceInfo.isRooted}`
+                            );
+                            toast.success("Bootloader copied to clipboard");
+                          }
+                          }
+                        ><FiCopy /></button>
+                      </p>
+                      <div className="divider"></div>
+                      <p>
+                        <span className="font-semibold">Bootloader:</span> {deviceInfo.bootloader}<br />
+                        <span className="font-semibold">Encryption State:</span> {deviceInfo.encryptionState}<br />
+                        <span className="font-semibold">Is Rooted:</span> {deviceInfo.isRooted}<br />
+                      </p>
+                      <div className="divider"></div>
+                      <p className="flex items-center font-semibold text-lg">
+                        <FiWifi className="mr-2" /> Network Info<button className="btn btn-xs ml-2"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `Carrier: ${deviceInfo.carrier}\nNetwork Type: ${deviceInfo.networkType}\nRadio Version: ${deviceInfo.radioVersion}`
+                            );
+                            toast.success("Network Info copied to clipboard");
+                          }
+                          }
+                        ><FiCopy /></button>
+                      </p>
+                      <div className="divider"></div>
+                      <p>
+                        <span className="font-semibold">Carrier:</span> {deviceInfo.carrier}<br />
+                        <span className="font-semibold">Network Type:</span> {deviceInfo.networkType}<br />
+                        <span className="font-semibold">Radio Version:</span> {deviceInfo.radioVersion}<br />
+                      </p>
+                      <div className="divider"></div>
+                      <p className="flex items-center font-semibold text-lg">
+                        <FiSettings className="mr-2" /> System Settings<button className="btn btn-xs ml-2"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `Timezone: ${deviceInfo.timeZone}\nLanguage: ${deviceInfo.language}`
+                            );
+                            toast.success("System settings copied to clipboard");
+                          }
+                          }
+                        ><FiCopy /></button>
+                      </p>
+                      <div className="divider"></div>
+                      <p>
+                        <span className="font-semibold">Timezone:</span> {deviceInfo.timeZone}<br />
+                        <span className="font-semibold">Language:</span> {deviceInfo.language}<br />
+                      </p>
+                      <div className="divider"></div>
+                      <p className="flex items-center font-semibold text-lg">
+                        <FiStar className="mr-2" /> Extras<button className="btn btn-xs ml-2"
+                          onClick={() => {
+                            navigator.clipboard.writeText(
+                              `Debug Mode: ${deviceInfo.debugMode}\nUSB Debugging: ${deviceInfo.usbDebugging}\nKernel Version: ${deviceInfo.kernelVersion}\nPatch Level: ${deviceInfo.patchLevel}\nBase OS: ${deviceInfo.baseOS}\nVendor OS: ${deviceInfo.vendorOS}`
+                            );
+                            toast.success("Extras copied to clipboard");
+                          }
+                          }
+                        ><FiCopy /></button>
+                      </p>
+                      <div className="divider"></div>
+                      <p>
+                        <span className="font-semibold">Debug Mode:</span> {deviceInfo.debugMode}<br />
+                        <span className="font-semibold">USB Debugging:</span> {deviceInfo.usbDebugging}<br />
+                        <span className="font-semibold">Kernel Version:</span> {deviceInfo.kernelVersion}<br />
+                        <span className="font-semibold">Patch Level:</span> {deviceInfo.patchLevel}<br />
+                        <span className="font-semibold">Base OS:</span> {deviceInfo.baseOS}<br />
+                        <span className="font-semibold">Vendor OS:</span> {deviceInfo.vendorOS}<br />
+                      </p>
+                      <div className="divider"></div>
+                    </div>
+                    <div className="w-full">
+                      <div className="flex items-center mb-3">
+                        <button className="btn" onClick={() => {
+                          const a = document.createElement("a");
+                          a.href = deviceScreenshot;
+                          a.download = "deviceScreenshot.png";
+                          a.click();
+                        }}><FiDownload /> Save Screenshot</button>
+                        <button className="btn ml-2" onClick={scrCpy}>
+                          <FiMaximize /> SCRCPY
+                        </button>
+                      </div>
+                      {deviceScreenshot ? (
+                        <img
+                          src={deviceScreenshot}
+                          className={deviceOrientation === "landscape" ? "w-auto h-[200px]" : "w-[200px] h-auto"}
+                        />
+                      ) : (
+                        ""
+                      )}
+                      <p className="flex items-center font-semibold text-lg my-2">
                         <FiPower className="mr-2" /> Power
                       </p>
                       <div>
@@ -466,27 +625,6 @@ export default function Home() {
                           <FiPower /> REBOOT BOOTLOADER
                         </button>
                       </div>
-                    </div>
-                    <div className="w-full">
-                      <div className="flex items-center mb-3">
-                        <button className="btn" onClick={() => {
-                          const a = document.createElement("a");
-                          a.href = deviceScreenshot;
-                          a.download = "deviceScreenshot.png";
-                          a.click();
-                        }}><FiDownload /> Save Screenshot</button>
-                        <button className="btn ml-2" onClick={scrCpy}>
-                          <FiMaximize /> SCRCPY
-                        </button>
-                      </div>
-                      {deviceScreenshot ? (
-                        <img
-                          src={deviceScreenshot}
-                          className={deviceOrientation === "landscape" ? "w-auto h-[200px]" : "w-[200px] h-auto"}
-                        />
-                      ) : (
-                        ""
-                      )}
                     </div>
                   </div>
                 </div>
