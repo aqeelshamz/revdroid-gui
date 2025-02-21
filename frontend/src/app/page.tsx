@@ -8,12 +8,10 @@ import { FaGithub } from "react-icons/fa";
 import {
   FiActivity,
   FiCheck,
-  FiCloud,
   FiCopy,
   FiCpu,
   FiDownload,
   FiExternalLink,
-  FiHash,
   FiLock,
   FiMaximize,
   FiPlay,
