@@ -1,5 +1,5 @@
 import express from 'express';
-import { runNormalCommand } from '../utils/utils.js';
+import { runAdbCommand, runNormalCommand } from '../utils/utils.js';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -21,9 +21,29 @@ router.get('/processes', async (req, res) => {
     }
 });
 
-router.get('/trace', (req, res) => {
-    const { process, filter } = req.query;
+// Helper function to run a command and collect its stdout
+function runCommand(command, args) {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args);
+        let output = '';
+        child.stdout.on('data', (data) => {
+            output += data.toString();
+        });
+        child.stderr.on('data', (data) => {
+            console.error(`${command} stderr:`, data.toString());
+        });
+        child.on('error', (err) => reject(err));
+        child.on('close', (code) => {
+            if (code !== 0) {
+                return reject(new Error(`${command} exited with code ${code}`));
+            }
+            resolve(output);
+        });
+    });
+}
 
+router.get('/trace', async (req, res) => {
+    const { id, process, filter } = req.query;
     if (!process) {
         return res.status(400).json({ error: 'Process name is required' });
     }
@@ -33,31 +53,49 @@ router.get('/trace', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    // Build the command with the proper format: -U -n <process> and optional -j <filter>
+    // Build the frida-trace arguments
     const args = ['-U', '-n', process];
     if (filter) {
         args.push('-j', filter);
     }
 
-    // Spawn frida-trace process
+    try {
+        // 1. Check if the process is running using frida-ps -Ua -j
+        const runningOutput = await runCommand('frida-ps', ['-Ua', '-j']);
+        const runningProcesses = JSON.parse(runningOutput);
+        const isRunning = runningProcesses.some(p => p.name === process);
+
+        if (!isRunning) {
+            // 2. Process is not running:
+            //    Get the installed applications list (includes package identifiers)
+            const installedOutput = await runCommand('frida-ps', ['-Uai', '-j']);
+            const installedApps = JSON.parse(installedOutput);
+            const appData = installedApps.find(p => p.name === process);
+
+            if (!appData || !appData.identifier) {
+                return res.status(404).json({ error: 'Application not found on device' });
+            }
+
+            // Launch the application using adb monkey command
+            // (Assuming runAdbCommand is defined elsewhere and returns a promise)
+            await runAdbCommand(`-s ${id} shell monkey -p ${appData.identifier} -c android.intent.category.LAUNCHER 1`);
+        }
+    } catch (err) {
+        console.error('Error while checking/launching process:', err);
+        return res.status(500).json({ error: 'Internal error while checking/launching process' });
+    }
+
+    // 3. Spawn the frida-trace process
     const traceProcess = spawn('frida-trace', args);
 
     traceProcess.stdout.on('data', (data) => {
-        console.log('Frida-trace stdout:', data.toString());
-        const output = data.toString();
-        const lines = output.split(/\r?\n/);
-        lines.forEach((line) => {
-            // Prepend "data:" before each line even if empty (you may choose to conditionally send empty lines)
-            res.write(`data: ${line}\n\n`);
-        });
+        const lines = data.toString().split(/\r?\n/);
+        lines.forEach(line => res.write(`data: ${line}\n\n`));
     });
 
     traceProcess.stderr.on('data', (data) => {
-        const output = data.toString();
-        const lines = output.split(/\r?\n/);
-        lines.forEach((line) => {
-            res.write(`data: ERROR: ${line}\n\n`);
-        });
+        const lines = data.toString().split(/\r?\n/);
+        lines.forEach(line => res.write(`data: ERROR: ${line}\n\n`));
     });
 
     traceProcess.on('close', (code) => {
@@ -70,6 +108,7 @@ router.get('/trace', (req, res) => {
         res.end();
     });
 });
+
 
 router.get('/methods', (req, res) => {
     const { process } = req.query;

@@ -258,15 +258,15 @@ export default function Home() {
       data: { id: selectedDevice, packageName: SApackageName, activityName: SAactivity }
     };
 
-    axios(config)
-      .then((response) => {
-        console.log(response.data);
-        toast.success("Activity started successfully");
-      })
-      .catch((error) => {
-        toast.error("Failed to start activity");
-        console.log(error);
-      });
+    try{
+      await axios(config);
+      toast.success("Activity started successfully");
+      return true;
+    }
+    catch(err){
+      toast.error("Failed to start activity");
+      return false;
+    }
   }
 
   const power = async (id: string, action: string) => {
@@ -403,13 +403,13 @@ export default function Home() {
       });
   }
 
-  const startTrace = (processName: string, filter: string) => {
+  const startTrace = async (processName: string, filter: string) => {
     if (isTracing) {
       toast.warning("Already tracing a process");
       return;
     }
 
-    const eventSource = new EventSource(`${serverURL}/frida/trace?process=${processName}&filter=${encodeURIComponent(filter)}`);
+    const eventSource = new EventSource(`${serverURL}/frida/trace?id=${selectedDevice}&process=${processName}&filter=${encodeURIComponent(filter)}`);
 
     eventSource.onopen = () => {
       setIsTracing(true);
