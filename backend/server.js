@@ -1,6 +1,5 @@
-import express, { raw } from 'express';
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import express from 'express';
+import { exec, spawn } from 'child_process';
 import cors from 'cors';
 import path from 'path';
 import fs from 'fs';
@@ -10,42 +9,21 @@ import mongoose from "mongoose";
 import Package from './models/Package.js';
 import PackageFetchingProcess from './models/PacakgeFetchingProcess.js';
 import dotenv from 'dotenv';
-dotenv.config();
+import fridaRouter from "./routes/frida.js";
+import { runAdbCommand, runNormalCommand } from './utils/utils.js';
+import { promisify } from "util";
 
 const execAsync = promisify(exec);
+
+dotenv.config();
+
 const app = express();
 const PORT = 8080;
 
 app.use(express.json());
 app.use(cors());
 
-/**
- * Function to run ADB command on system shell
- * @param {string} command - The ADB command to execute
- * @returns {Promise<string>} - Command output
- */
-const runAdbCommand = async (command) => {
-    try {
-        const { stdout, stderr } = await execAsync(`adb ${command}`);
-        if (stderr) throw new Error(stderr);
-        return stdout.trim();
-    } catch (error) {
-        console.log(error);
-        if (error.message.includes("Command failed:") || error.message.includes("does not exist.")) {
-            throw error;
-        }
-    }
-};
-
-const runNormalCommand = async (command) => {
-    try {
-        const { stdout, stderr } = await execAsync(command);
-        if (stderr) throw new Error(stderr);
-        return stdout.trim();
-    } catch (error) {
-        console.log(error)
-    }
-};
+app.use('/frida', fridaRouter);
 
 app.get('/', (req, res) => {
     res.send('ADB API Server is Running');
@@ -291,8 +269,6 @@ app.post('/adb/packages', async (req, res) => {
             .split('\n')
             .filter(line => line.includes('package:'))
             .map(line => line.replace('package:', '').trim());
-
-        console.log(packages);
         // 2) For each package, get the icon
         const results = [];
         for (const pkg of packages) {
@@ -317,7 +293,6 @@ app.post('/adb/packages', async (req, res) => {
                         console.log(err);
                     }
                 }
-                console.log(`Package: ${pkg}, Icon: ${iconBase64 ? '✅' : '❌'}`);
                 results.push({ packageName: pkg, iconBase64 });
             }
             else {
@@ -357,8 +332,6 @@ app.post('/get-apk-paths', async (req, res) => {
             .split('\n')
             .map(line => line.replace('package:', '').trim())
             .filter(Boolean);
-
-        console.log(paths);
 
         return res.status(200).json(paths);
     } catch (err) {
@@ -508,12 +481,53 @@ app.post("/device-info", async (req, res) => {
             vendorOS: getInfo['[ro.vendor.build.version.release]']?.replace(/^\[|\]$/g, '')
         };
 
-        console.log(deviceInfo);
-
         res.status(200).json(deviceInfo);
     } catch (err) {
         res.status(500).json(err);
     }
+});
+
+app.get('/adb/logcat', (req, res) => {
+    const { id, filter, level = 'I' } = req.query; // Default log level: Info (more severe: V, D, I, W, E, F)
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Construct ADB logcat command with filters
+    // Example: adb -s <device_id> logcat MyAppTag:I *:S
+    const adbArgs = ['-s', id, 'logcat'];
+
+    if (filter) {
+        adbArgs.push(`${filter}:${level}`, '*:S'); // Show only filtered logs
+    } else {
+        adbArgs.push('*:I'); // Default to Info level
+    }
+
+    const logcatProcess = spawn('adb', adbArgs);
+
+    // Stream stdout data to client
+    logcatProcess.stdout.on('data', (data) => {
+        res.write(`data: ${data.toString()}\n\n`);
+    });
+
+    // Handle stderr (errors)
+    logcatProcess.stderr.on('data', (data) => {
+        res.write(`data: ERROR: ${data.toString()}\n\n`);
+    });
+
+    // Close connection on process end
+    logcatProcess.on('close', (code) => {
+        res.write(`data: Logcat closed with code ${code}\n\n`);
+        res.end();
+    });
+
+    // Kill process if client disconnects
+    req.on('close', () => {
+        logcatProcess.kill();
+        res.end();
+    });
 });
 
 //connect to db
