@@ -8,6 +8,7 @@ import { FaGithub } from "react-icons/fa";
 import {
   FiActivity,
   FiCheck,
+  FiCode,
   FiCopy,
   FiCpu,
   FiDownload,
@@ -443,7 +444,6 @@ export default function Home() {
     };
   };
 
-
   useEffect(() => {
     if (selectedDevice !== "" && selectedTab === "device") {
       getDeviceScreenshot(selectedDevice);
@@ -467,8 +467,8 @@ export default function Home() {
   }, [systemApps]);
 
   return (
-    <main className="w-screen h-screen flex flex-col bg-white overflow-hidden">
-      <div className="p-5 flex-none bg-white flex items-center justify-between">
+    <main className="w-screen h-screen flex flex-col  overflow-hidden">
+      <div className="p-5 flex-none  flex items-center justify-between">
         <div className="flex items-center">
           <p className="text-lg font-bold">🚀 RevDroid</p>
           <div className="tooltip tooltip-bottom" data-tip="Run the backend server on port 8080. Make sure ADB is installed and running.">
@@ -477,8 +477,8 @@ export default function Home() {
         </div>
         <a target="_blank" className="flex items-center link link-hover" href="https://github.com/aqeelshamz/revdroid-gui"><FaGithub className="mr-2" /> GitHub</a>
       </div>
-      <div className="flex-1 flex w-full bg-slate-50 min-h-0">
-        <div className="flex flex-col p-5 w-[300px] h-full bg-white">
+      <div className="flex-1 flex w-full min-h-0">
+        <div className="flex flex-col p-5 w-[300px] h-full ">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <BiDevices size={20} />
@@ -749,7 +749,7 @@ export default function Home() {
                       search !== "" && !package_.packageName.toLowerCase().includes(search.toLowerCase()) ? "" :
                         <div
                           key={index}
-                          className="hover:bg-slate-200 cursor-pointer flex p-3 items-center justify-between select-none"
+                          className="hover:bg-base-200 cursor-pointer flex p-3 items-center justify-between select-none"
                           onDoubleClick={() => launchApp(package_.packageName)}
                         >
                           <div className="flex items-center">
@@ -780,8 +780,9 @@ export default function Home() {
                 </> : selectedTab === "reverse" ?
                   <div className="w-full h-full flex relative">
                     <div className="flex flex-col w-fit">
-                      <p className="font-semibold text-lg mb-2">Running Processes</p>
-                      <select className="select select-bordered w-full" value={reSelectedProcess} onChange={(x) => setReSelectedProcess(x.target.value)}>
+                      <a target="_blank" href={"/reverse-engineering/" + selectedDevice} className="link link-primary flex items-center">Reverse Engineering Studio <FiExternalLink className="ml-2" /></a>
+                      <p className="font-semibold text-lg my-4">Running Processes</p>
+                      <select onClick={() => getProcesses()} className="select select-bordered w-full" value={reSelectedProcess} onChange={(x) => setReSelectedProcess(x.target.value)}>
                         <option value="">Select process</option>
                         {
                           reProcesses.map((process: any, index) => (
@@ -789,7 +790,14 @@ export default function Home() {
                           ))
                         }
                       </select>
-                      {reSelectedProcess ? <input type="text" placeholder="Filter" className="input input-bordered w-full mt-2" value={traceFilter} onChange={(x) => setTraceFilter(x.target.value)} /> : ""}
+                      <div className="flex items-center mt-2">
+                        <div className="tooltip" data-tip={"Show classes of " + reSelectedProcess}>
+                          {reSelectedProcess ? <button onClick={() => {
+                            window.open(`${serverURL}/frida/methods?process=${reSelectedProcess}`, "_blank");
+                          }} className="btn btn-square mr-2"><FiCode /></button> : ""}
+                        </div>
+                        {reSelectedProcess ? <input type="text" placeholder="Method filter (format: class!method)" className="input input-bordered w-full" value={traceFilter} onChange={(x) => setTraceFilter(x.target.value)} /> : ""}
+                      </div>
                       {reSelectedProcess ? <button className="btn btn-primary mt-4" onClick={() => {
                         if (isTracing) {
                           traceEventSource?.close();

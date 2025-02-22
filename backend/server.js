@@ -20,6 +20,8 @@ dotenv.config();
 const app = express();
 const PORT = 8080;
 
+let isConnectedtoDB = false;
+
 app.use(express.json());
 app.use(cors());
 
@@ -296,11 +298,16 @@ app.post('/adb/packages', async (req, res) => {
                 results.push({ packageName: pkg, iconBase64 });
             }
             else {
-                const _package = await Package.findOne({ packageName: pkg });
-                const iconBase64 = (_package) ? _package.base64Image : "x";
-                results.push({
-                    packageName: pkg, iconBase64: iconBase64
-                })
+                if (isConnectedtoDB) {
+                    const _package = await Package.findOne({ packageName: pkg });
+                    const iconBase64 = (_package) ? _package.base64Image : "x";
+                    results.push({
+                        packageName: pkg, iconBase64: iconBase64
+                    })
+                }
+                else {
+                    results.push({ packageName: pkg, iconBase64: "x" });
+                }
             }
         }
 
@@ -533,6 +540,7 @@ app.get('/adb/logcat', (req, res) => {
 //connect to db
 mongoose.connect(process.env.DB_URL).then(() => {
     console.log('Connected to MongoDB');
+    isConnectedtoDB = true;
 }
 ).catch((err) => {
     console.log('Failed to connect to MongoDB', err);
