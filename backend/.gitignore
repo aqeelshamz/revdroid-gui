@@ -4,7 +4,7 @@ npm-debug.log
 yarn-debug.log
 yarn-error.log
 temp/
-
+__handlers__/
 # Logs
 logs/
 *.log

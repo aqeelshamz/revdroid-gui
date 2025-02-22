@@ -24,11 +24,22 @@ let isConnectedtoDB = false;
 
 app.use(express.json());
 app.use(cors());
+app.use(express.static('public'));
 
 app.use('/frida', fridaRouter);
 
 app.get('/', (req, res) => {
     res.send('ADB API Server is Running');
+});
+
+app.get('/download/:filename', (req, res) => {
+    const filename = req.params.filename;
+    const file = "./public/" + filename;
+    res.download(file, err => {
+        if (err) {
+            res.status(404).send('File not found');
+        }
+    });
 });
 
 //connect device
@@ -351,14 +362,14 @@ app.post('/export-apk', async (req, res) => {
     try {
         const { id, path } = req.body;
 
-        //pull apk from device to local and send response as the file
-        await execAsync(`adb -s ${id} pull ${path}`);
-
         const fileName = path.split('/').pop();
         console.log(fileName);
 
-        res.download(fileName);
-        await fsPromises.rm(fileName, { force: true });
+        //pull apk from device to local and send response as the file
+        await execAsync(`adb -s ${id} pull ${path} ./public/${fileName}`);
+
+        //send a link to download the file
+        res.status(200).send(`http://localhost:${PORT}/download/${fileName}`);
     } catch (err) {
         console.log(err)
         res.status(500).json(err);

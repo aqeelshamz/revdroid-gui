@@ -234,10 +234,9 @@ export default function Home() {
         setDownloadingAPK(false);
         toast.success("APK exported successfully");
 
-        const blob = new Blob([response.data], { type: "application/vnd.android.package-archive" });
-        const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
-        a.href = url;
+        a.href = response.data;
+        a.target = "_blank";
         a.download = downloadingAPKPkg + "_" + path.substring(path.lastIndexOf('/') + 1);
         document.body.appendChild(a);
         a.click();

@@ -6,6 +6,7 @@ import { FiCode, FiDownload, FiInfo, FiSearch, FiSmartphone, FiTarget } from "re
 import { GrJava } from "react-icons/gr";
 import InstallFreda from "./components/InstallFreda";
 import { FaGithub } from "react-icons/fa";
+import { FaFlutter } from "react-icons/fa6";
 
 export default function Page() {
     const { deviceId } = useParams();
@@ -42,6 +43,8 @@ export default function Page() {
                     <li className="menu-title">Decompile</li>
                     <li onClick={() => setSelectedTab("apktool")}><a className={selectedTab === "apktool" ? "active" : ""}><BsAndroid /> APKTool</a></li>
                     <li onClick={() => setSelectedTab("jadx")}><a className={selectedTab === "jadx" ? "active" : ""}><GrJava /> JADX</a></li>
+                    <li className="menu-title">Flutter</li>
+                    <li onClick={() => setSelectedTab("flutter-rev")}><a className={selectedTab === "flutter-rev" ? "active" : ""}><FaFlutter /> Flutter Reverse Engineering</a></li>
                 </ul>
             </div>
             <div className="p-2 w-full h-full bg-base-100">
