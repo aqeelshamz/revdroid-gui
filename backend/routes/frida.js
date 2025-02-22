@@ -11,7 +11,7 @@ const router = express.Router();
 
 router.get('/processes', async (req, res) => {
     try {
-        const output = await runNormalCommand('frida-ps -Ua -j');
+        const output = await runNormalCommand('frida-ps -Uai -j');
 
         const processes = JSON.parse(output);
         res.json(processes);
