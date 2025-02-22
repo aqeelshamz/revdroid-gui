@@ -342,10 +342,87 @@ export default function Home() {
       });
   }
 
+  //Reverse Engineering
+  const [reProcesses, setReProcesses] = useState<any[]>([]);
+  const [reSelectedProcess, setReSelectedProcess] = useState<string>("");
+  const [isTracing, setIsTracing] = useState<boolean>(false);
+  const [traceLogs, setTraceLogs] = useState<string[]>([]);
+  const [traceEventSource, setTraceEventSource] = useState<EventSource | null>(null);
+  const [traceFilter, setTraceFilter] = useState<string>(""); // For user-defined filters
+  const traceLogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (traceLogRef.current) {
+      traceLogRef.current.scrollTo({
+        top: traceLogRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
+    }
+  }, [traceLogs]);
+
+  const getProcesses = () => {
+    const config = {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      url: `${serverURL}/frida/processes`,
+    };
+
+    axios(config)
+      .then((response) => {
+        console.log(response.data);
+        setReProcesses(response.data);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }
+
+  const startTrace = (processName: string, filter: string) => {
+    if (isTracing) {
+      toast.warning("Already tracing a process");
+      return;
+    }
+
+    const eventSource = new EventSource(`${serverURL}/frida/trace?process=${processName}&filter=${encodeURIComponent(filter)}`);
+
+    eventSource.onopen = () => {
+      setIsTracing(true);
+      setTraceLogs([]); // Clear previous logs
+      setTraceEventSource(eventSource);
+      toast.success(`Started tracing ${processName}`);
+    };
+
+    eventSource.onmessage = (event) => {
+      // Just split by newline, and do NOT trim or filter
+      const lines = event.data.split('\n');
+
+      console.log(event.data);
+      console.log(event);
+
+      // Append every line exactly as is
+      setTraceLogs((prevLogs) => [...prevLogs, ...lines]);
+    };
+
+
+    eventSource.onerror = (err) => {
+      console.error("Frida Trace Error:", err);
+      toast.error("Error in tracing");
+
+      eventSource.close();
+      setIsTracing(false);
+      setTraceEventSource(null);
+    };
+  };
+
+
   useEffect(() => {
     if (selectedDevice !== "" && selectedTab === "device") {
       getDeviceScreenshot(selectedDevice);
       getDeviceInfo(selectedDevice);
+    }
+
+    if (selectedTab === "reverse") {
+      getProcesses();
     }
   }, [selectedDevice, selectedTab]);
 
@@ -672,23 +749,47 @@ export default function Home() {
                     ))}
                   </div>
                 </> : selectedTab === "reverse" ?
-                  <div className="flex flex-col w-fit">
-                    <p className="font-semibold text-lg mb-2">Decompile</p>
-                    <div>
-                      <button className="btn mr-2" onClick={() => {
-                        (
-                          document.getElementById("apktool") as HTMLDialogElement
-                        ).showModal()
-                      }}>
-                        <BsAndroid /> APKTOOL
-                      </button>
-                      <button className="btn" onClick={() => {
-                        (
-                          document.getElementById("jadx") as HTMLDialogElement
-                        ).showModal()
-                      }}>
-                        <GrJava /> JADX
-                      </button>
+                  <div className="w-full h-full flex">
+                    <div className="flex flex-col w-fit">
+                      <p className="font-semibold text-lg mb-2">Running Processes</p>
+                      <select className="select select-bordered w-full" value={reSelectedProcess} onChange={(x) => setReSelectedProcess(x.target.value)}>
+                        <option value="">Select process</option>
+                        {
+                          reProcesses.map((process: any, index) => (
+                            <option key={index} value={process}>{process}</option>
+                          ))
+                        }
+                      </select>
+                      {reSelectedProcess ? <input type="text" placeholder="Filter" className="input input-bordered w-full mt-2" value={traceFilter} onChange={(x) => setTraceFilter(x.target.value)} /> : ""}
+                      {reSelectedProcess ? <button className="btn btn-primary mt-4" onClick={() => startTrace(reSelectedProcess, traceFilter)}>{isTracing ? "Tracing..." : "Start Trace"}</button> : ""}
+                      <p className="font-semibold text-lg my-4">Decompile</p>
+                      <div>
+                        <button className="btn mr-2" onClick={() => {
+                          (
+                            document.getElementById("apktool") as HTMLDialogElement
+                          ).showModal()
+                        }}>
+                          <BsAndroid /> APKTOOL
+                        </button>
+                        <button className="btn" onClick={() => {
+                          (
+                            document.getElementById("jadx") as HTMLDialogElement
+                          ).showModal()
+                        }}>
+                          <GrJava /> JADX
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      ref={traceLogRef}
+                      className="flex flex-col w-full h-full overflow-auto ml-10 max-h-[calc(100vh-200px)] bg-black text-green-400 p-4 rounded-lg"
+                    >
+                      <p className="font-semibold text-lg mb-2 text-white">Running Processes</p>
+                      <pre className="text-sm whitespace-pre-wrap">
+                        {traceLogs.map((log, index) => (
+                          <code key={index}>{log + '\n'}</code>
+                        ))}
+                      </pre>
                     </div>
                   </div> : selectedTab === "activity" ?
                     <div className="flex flex-col max-w-xl">
