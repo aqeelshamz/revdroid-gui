@@ -537,6 +537,49 @@ app.get('/adb/logcat', (req, res) => {
     });
 });
 
+app.get('/execute-in-terminal', (req, res) => {
+    const { command } = req.query;
+    if (!command) {
+        return res.status(400).json({ error: 'Command is required' });
+    }
+
+    // Set SSE headers for continuous streaming
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+
+    // Execute the command with spawn using shell: true for shell commands
+    const proc = spawn(command, { shell: true });
+
+    // Stream stdout data
+    proc.stdout.on('data', (data) => {
+        const lines = data.toString().split(/\r?\n/);
+        lines.forEach((line) => {
+            res.write(`data: ${line}\n\n`);
+        });
+    });
+
+    // Stream stderr data with an error prefix
+    proc.stderr.on('data', (data) => {
+        const lines = data.toString().split(/\r?\n/);
+        lines.forEach((line) => {
+            res.write(`data: ERROR: ${line}\n\n`);
+        });
+    });
+
+    // When the process closes, notify the client and end the SSE stream
+    proc.on('close', (code) => {
+        res.write(`data: Process exited with code ${code}\n\n`);
+        res.end();
+    });
+
+    // If the client disconnects, kill the process
+    req.on('close', () => {
+        proc.kill();
+        res.end();
+    });
+});
+
 //connect to db
 mongoose.connect(process.env.DB_URL).then(() => {
     console.log('Connected to MongoDB');
@@ -549,4 +592,7 @@ mongoose.connect(process.env.DB_URL).then(() => {
 // Start the server
 app.listen(PORT, () => {
     console.log(`🚀 ADB API Server running at http://localhost:${PORT}`);
+
+    // Open terminal and run frida --version command.
+
 });
