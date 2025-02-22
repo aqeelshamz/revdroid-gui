@@ -46,7 +46,6 @@ router.get('/trace', (req, res) => {
 
     traceProcess.stdout.on('data', (data) => {
         const output = data.toString();
-        console.log(output);
         const lines = output.split(/\r?\n/);
         lines.forEach((line) => {
             // Prepend "data:" before each line even if empty (you may choose to conditionally send empty lines)

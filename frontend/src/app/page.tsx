@@ -18,9 +18,12 @@ import {
   FiPlus,
   FiPower,
   FiRefreshCcw,
+  FiSearch,
   FiSettings,
   FiSmartphone,
   FiStar,
+  FiStopCircle,
+  FiTrash2,
   FiWifi
 } from "react-icons/fi";
 import { GrJava } from "react-icons/gr";
@@ -350,6 +353,29 @@ export default function Home() {
   const [traceEventSource, setTraceEventSource] = useState<EventSource | null>(null);
   const [traceFilter, setTraceFilter] = useState<string>(""); // For user-defined filters
   const traceLogRef = useRef<HTMLDivElement>(null);
+  const [reSearch, setReSearch] = useState<string>("");
+
+  const highlightLine = (line: string, search: string) => {
+    if (!search) return line;
+    const regex = new RegExp(`(${search})`, 'gi');
+    // Split the line by the search term, but keep the search term in the results.
+    const parts = line.split(regex);
+    return parts.map((part, i) =>
+      regex.test(part) ? (
+        <span key={i} className="bg-yellow-500 text-black">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
+  };
+
+  const filteredLogs = reSearch.trim()
+    ? traceLogs.filter((line) =>
+      line.toLowerCase().includes(reSearch.toLowerCase())
+    )
+    : traceLogs;
 
   useEffect(() => {
     if (traceLogRef.current) {
@@ -392,15 +418,18 @@ export default function Home() {
       toast.success(`Started tracing ${processName}`);
     };
 
+    const MAX_LOGS = 1000;
     eventSource.onmessage = (event) => {
-      // Just split by newline, and do NOT trim or filter
-      const lines = event.data.split('\n');
-
-      console.log(event.data);
-      console.log(event);
-
-      // Append every line exactly as is
-      setTraceLogs((prevLogs) => [...prevLogs, ...lines]);
+      const newLines = event.data.split('\n'); // split into lines without any trimming
+      setTraceLogs((prevLogs) => {
+        // Combine previous logs with the new lines
+        let combined = [...prevLogs, ...newLines];
+        // If the total exceeds the maximum allowed, keep only the last MAX_LOGS lines
+        if (combined.length > MAX_LOGS) {
+          combined = combined.slice(-MAX_LOGS);
+        }
+        return combined;
+      });
     };
 
 
@@ -749,7 +778,7 @@ export default function Home() {
                     ))}
                   </div>
                 </> : selectedTab === "reverse" ?
-                  <div className="w-full h-full flex">
+                  <div className="w-full h-full flex relative">
                     <div className="flex flex-col w-fit">
                       <p className="font-semibold text-lg mb-2">Running Processes</p>
                       <select className="select select-bordered w-full" value={reSelectedProcess} onChange={(x) => setReSelectedProcess(x.target.value)}>
@@ -761,7 +790,19 @@ export default function Home() {
                         }
                       </select>
                       {reSelectedProcess ? <input type="text" placeholder="Filter" className="input input-bordered w-full mt-2" value={traceFilter} onChange={(x) => setTraceFilter(x.target.value)} /> : ""}
-                      {reSelectedProcess ? <button className="btn btn-primary mt-4" onClick={() => startTrace(reSelectedProcess, traceFilter)}>{isTracing ? "Tracing..." : "Start Trace"}</button> : ""}
+                      {reSelectedProcess ? <button className="btn btn-primary mt-4" onClick={() => {
+                        if (isTracing) {
+                          traceEventSource?.close();
+                          setIsTracing(false);
+                          setTraceEventSource(null);
+                          toast.success("Trace stopped");
+                        }
+                        else {
+                          startTrace(reSelectedProcess, traceFilter);
+                        }
+                      }}>
+                        {isTracing ? <FiStopCircle /> : <FiPlay />}
+                        {isTracing ? "Stop Trace" : "Start Trace"}</button> : ""}
                       <p className="font-semibold text-lg my-4">Decompile</p>
                       <div>
                         <button className="btn mr-2" onClick={() => {
@@ -784,12 +825,18 @@ export default function Home() {
                       ref={traceLogRef}
                       className="flex flex-col w-full h-full overflow-auto ml-10 max-h-[calc(100vh-200px)] bg-black text-green-400 p-4 rounded-lg"
                     >
-                      <p className="font-semibold text-lg mb-2 text-white">Running Processes</p>
                       <pre className="text-sm whitespace-pre-wrap">
-                        {traceLogs.map((log, index) => (
-                          <code key={index}>{log + '\n'}</code>
+                        {filteredLogs.map((log, index) => (
+                          <code key={index}>
+                            {highlightLine(log, reSearch)}
+                            {"\n"}
+                          </code>
                         ))}
                       </pre>
+                    </div>
+                    <div className="flex items-center absolute right-5 top-5">
+                      <button className="btn btn-sm mr-2" onClick={() => setTraceLogs([])}><FiTrash2 /></button>
+                      <input type="text" placeholder="Search logs..." className="input input-sm input-bordered max-w-sm" value={reSearch} onChange={(x) => setReSearch(x.target.value)} />
                     </div>
                   </div> : selectedTab === "activity" ?
                     <div className="flex flex-col max-w-xl">

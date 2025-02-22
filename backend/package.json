@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon server.js --ignore './temp/'"
+    "start": "nodemon server.js --ignore './temp/' --ignore './__handlers__/'"
   },
   "type": "module",
   "keywords": [],
