@@ -781,11 +781,17 @@ export default function Home() {
                     <div className="flex flex-col w-fit">
                       <a target="_blank" href={"/reverse-engineering/" + selectedDevice} className="link link-primary flex items-center">Reverse Engineering Studio <FiExternalLink className="ml-2" /></a>
                       <p className="font-semibold text-lg my-4">Running Processes</p>
-                      <select onClick={() => getProcesses()} className="select select-bordered w-full" value={reSelectedProcess} onChange={(x) => setReSelectedProcess(x.target.value)}>
+                      <select onClick={() => getProcesses()} className="select select-bordered w-full" value={reSelectedProcess} onChange={(x) => {
+                        setReSelectedProcess(x.target.value);
+                        const process = reProcesses.find((p: any) => p.name === x.target.value);
+                        if (process) {
+                          setTraceFilter(process.identifier + "*!*");
+                        }
+                      }}>
                         <option value="">Select process</option>
                         {
                           reProcesses.map((process: any, index) => (
-                            <option key={index} value={process}>{process}</option>
+                            <option key={index} value={process.name}>{process.name} ({process.identifier})</option>
                           ))
                         }
                       </select>

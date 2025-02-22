@@ -11,17 +11,10 @@ const router = express.Router();
 
 router.get('/processes', async (req, res) => {
     try {
-        const output = await runNormalCommand('frida-ps -U');
+        const output = await runNormalCommand('frida-ps -Ua -j');
 
-        // Process output to extract process names
-        const lines = output.split('\n')
-            .filter(line => line.trim() && !line.includes('PID') && !line.includes('---')); // Remove header and separator
-
-        const processNames = lines
-            .map(line => line.trim().split(/\s{2,}/).pop()) // Extract process name
-            .filter(Boolean); // Remove empty entries
-
-        res.json(processNames);
+        const processes = JSON.parse(output);
+        res.json(processes);
     } catch (error) {
         console.error('Error listing Frida processes:', error);
         res.status(500).json({ error: 'Failed to list Frida processes' });
@@ -50,6 +43,7 @@ router.get('/trace', (req, res) => {
     const traceProcess = spawn('frida-trace', args);
 
     traceProcess.stdout.on('data', (data) => {
+        console.log('Frida-trace stdout:', data.toString());
         const output = data.toString();
         const lines = output.split(/\r?\n/);
         lines.forEach((line) => {
